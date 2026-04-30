@@ -101,7 +101,7 @@ td.muted{color:var(--p);opacity:.6}
 </script>
 <div class="header">
   <div><div class="brand">Ticketportal</div><h1>Newsletter Dashboard</h1></div>
-  <span class="updated">Aktualizováno 30.04.2026 18:41</span>
+  <span class="updated">Aktualizováno 30.04.2026 18:45</span>
 </div>
 <div class="container">
   <div class="dash-hd">
@@ -279,10 +279,18 @@ function renderTrend(src){
       })
     },options:buildTrendOpts(true)};
   } else {
-    // Time series: single OR + CTR line
+    // Benchmark averages from ALL campaigns
+    var validOr=allCamps.filter(function(c){return c.or!=null;});
+    var validCtr=allCamps.filter(function(c){return c.ctr!=null;});
+    var avgOr=validOr.length?Math.round(validOr.reduce(function(s,c){return s+(c.or||0);},0)/validOr.length*10)/10:null;
+    var avgCtr=validCtr.length?Math.round(validCtr.reduce(function(s,c){return s+(c.ctr||0);},0)/validCtr.length*10)/10:null;
+    var n=src.length;
+    // Time series: OR + CTR lines + dashed benchmark
     cfg={type:'line',data:{labels:src.map(function(c){return c.datum;}),datasets:[
       {label:'OR %',data:src.map(function(c){return c.or;}),borderColor:'#06d473',backgroundColor:'rgba(6,212,115,.08)',tension:.35,fill:true,pointRadius:5},
-      {label:'CTR %',data:src.map(function(c){return c.ctr;}),borderColor:'#ff80e3',backgroundColor:'transparent',tension:.35,fill:false,pointRadius:5}
+      {label:'CTR %',data:src.map(function(c){return c.ctr;}),borderColor:'#ff80e3',backgroundColor:'transparent',tension:.35,fill:false,pointRadius:5},
+      {label:'Ø OR průměr',data:Array(n).fill(avgOr),borderColor:'rgba(6,212,115,.4)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0},
+      {label:'Ø CTR průměr',data:Array(n).fill(avgCtr),borderColor:'rgba(255,128,227,.4)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0}
     ]},options:buildTrendOpts(false)};
   }
   tcChart=new Chart(tcEl,cfg);
