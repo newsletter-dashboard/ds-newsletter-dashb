@@ -82,28 +82,25 @@ td.muted{color:var(--p);opacity:.6}
 </div>
 <script>
 (function(){
-  var H='b6eb1805160107cd76934f63fb3f18897de139eb211a5682ed6326c427bcde79';
-  function sha256(s){
-    var buf=new TextEncoder().encode(s);
-    return crypto.subtle.digest('SHA-256',buf).then(function(h){
-      return Array.from(new Uint8Array(h)).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
-    });
-  }
+  var K='dm1lSiVBMWFRYWNrRFI=';
   if(localStorage.getItem('nl_auth')==='1'){
     document.getElementById('pw-overlay').style.display='none';
   }
   window.pwCheck=function(){
     var v=document.getElementById('pw-in').value;
-    sha256(v).then(function(h){
-      if(h===H){localStorage.setItem('nl_auth','1');document.getElementById('pw-overlay').style.display='none';}
-      else{document.getElementById('pw-err').style.display='block';document.getElementById('pw-in').value='';}
-    });
+    if(btoa(unescape(encodeURIComponent(v)))===K){
+      localStorage.setItem('nl_auth','1');
+      document.getElementById('pw-overlay').style.display='none';
+    }else{
+      document.getElementById('pw-err').style.display='block';
+      document.getElementById('pw-in').value='';
+    }
   };
 })();
 </script>
 <div class="header">
   <div><div class="brand">Ticketportal</div><h1>Newsletter Dashboard</h1></div>
-  <span class="updated">Aktualizováno 30.04.2026 18:24</span>
+  <span class="updated">Aktualizováno 30.04.2026 18:26</span>
 </div>
 <div class="container">
   <div class="dash-hd">
