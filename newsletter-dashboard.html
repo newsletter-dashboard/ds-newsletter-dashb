@@ -88,7 +88,8 @@ td.muted{color:var(--p);opacity:.6}
   }
   window.pwCheck=function(){
     var v=document.getElementById('pw-in').value;
-    if(btoa(unescape(encodeURIComponent(v)))===K){
+    var ok=false;try{ok=(btoa(v)===K);}catch(e){}
+    if(ok){
       localStorage.setItem('nl_auth','1');
       document.getElementById('pw-overlay').style.display='none';
     }else{
@@ -100,7 +101,7 @@ td.muted{color:var(--p);opacity:.6}
 </script>
 <div class="header">
   <div><div class="brand">Ticketportal</div><h1>Newsletter Dashboard</h1></div>
-  <span class="updated">Aktualizováno 30.04.2026 18:26</span>
+  <span class="updated">Aktualizováno 30.04.2026 18:34</span>
 </div>
 <div class="container">
   <div class="dash-hd">
