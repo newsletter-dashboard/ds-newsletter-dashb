@@ -393,6 +393,7 @@ footer.app-foot{
 .match-row .dot{ width:9px; height:9px; border-radius:50%; flex:none; }
 .match-row .dot.doma{ background:var(--rink); }
 .match-row .dot.venku{ background:var(--ink-faint); }
+.match-row .dot.nabor{ background:var(--amber); }
 .match-row .info{ flex:1; }
 .match-row .rm{ background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:1rem; line-height:1; padding:.2rem .4rem; }
 
@@ -414,12 +415,16 @@ footer.app-foot{
   font-family:'Oswald',sans-serif; font-size:.6rem; letter-spacing:.02em; text-transform:uppercase;
   color:var(--ink-soft); line-height:1.15;
 }
+.cal-day .dtag.rubrika{ color:var(--rink); font-weight:600; }
 .cal-day .mtag{
   font-family:'Oswald',sans-serif; font-size:.6rem; letter-spacing:.03em; text-transform:uppercase;
   color:#fff; background:var(--rink); border-radius:3px; padding:.05rem .3rem; display:inline-block; width:fit-content;
 }
+.cal-day .mtag.mtag-nabor{ background:var(--amber); color:#241a06; }
+.cal-day .mtag.mtag-venku{ background:var(--ink-faint); }
 .cal-day.match-day{ border-color:var(--rink); border-width:2px; }
 .cal-day.match-day.venku{ border-color:var(--ink-faint); border-style:dashed; }
+.cal-day.match-day.nabor{ border-color:var(--amber); }
 .cal-day.pre-match{ background:color-mix(in srgb, var(--red) 7%, var(--paper)); border-color:color-mix(in srgb, var(--red) 30%, var(--line)); }
 .cal-day.done{ opacity:.55; }
 .cal-day .check{ position:absolute; top:.3rem; right:.3rem; width:14px; height:14px; }
@@ -874,7 +879,7 @@ footer.app-foot{
 </main>
 
 <footer class="app-foot">
-  UK Kings Prague — Content Playbook v2 · sestaveno 2026-07-26 · pro interní použití klubu
+  UK Kings Prague — Content Playbook v2 · sestaveno 2026-07-27 · pro interní použití klubu
 </footer>
 
 <script>
@@ -1017,6 +1022,8 @@ const WEEKLY = [
   {tag:'Humor', detail:'UGC repost, meme, bloopery týdne.'}
 ];
 
+const TYPE_LABEL = {doma:'ZÁPAS', venku:'VENKU', nabor:'NÁBOR'};
+
 function fmtDate(d){
   const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${day}`;
@@ -1031,11 +1038,18 @@ function daysBetween(a,b){ // a - b in whole days
 
 function matchStage(cellDate, match){
   const m = new Date(match.date+'T00:00:00');
-  const diff = daysBetween(cellDate, m); // 0 = match day, negative = before
-  if(!match.home){
-    if(diff===0) return {label:'ZÁPAS VENKU', detail:'Sleduj naživo, přeposílej reakce fanoušků do stories, mic-up pokud jede štáb.', cls:'venku'};
+  const diff = daysBetween(cellDate, m); // 0 = day itself, negative = before
+
+  if(match.type === 'nabor'){
+    if(diff===0) return {label:'NÁBOR', detail:'Nábor / tryout — natoč roster přírůstky, POV nováčků, krátké „3 otázky“ s uchazeči.'};
+    if(diff===-3) return {label:'3 dny před náborem', detail:'Story: „Za 3 dny hledáme nové Kings“ + link na přihlášku.'};
     return null;
   }
+  if(match.type === 'venku'){
+    if(diff===0) return {label:'ZÁPAS VENKU', detail:'Sleduj naživo, přeposílej reakce fanoušků do stories, mic-up pokud jede štáb.'};
+    return null;
+  }
+  // doma
   if(diff===-7) return {label:'7 dní před', detail:'Ohlášení soupeře + 1 historický/statistický fakt o rivalitě.'};
   if(diff===-3) return {label:'3 dny před', detail:'Trend Radar / hráčský spotlight — lehčí obsah, drží účet aktivní.'};
   if(diff===-1) return {label:'Den před', detail:'Pozvánka — hype reel, CTA v prvních 2s + link na vstupenky ve story.'};
@@ -1049,7 +1063,11 @@ function matchStage(cellDate, match){
 }
 
 function loadMatches(){
-  try{ return JSON.parse(localStorage.getItem('ukkings_planner_matches')||'[]'); }catch(e){ return []; }
+  try{
+    const raw = JSON.parse(localStorage.getItem('ukkings_planner_matches')||'[]');
+    // migrate old {home:boolean} entries to {type:'doma'|'venku'}
+    return raw.map(m => m.type ? m : {date:m.date, type: m.home ? 'doma':'venku', rival:m.rival||''});
+  }catch(e){ return []; }
 }
 function saveMatches(list){ localStorage.setItem('ukkings_planner_matches', JSON.stringify(list)); }
 function loadNotes(){
@@ -1082,11 +1100,15 @@ function initPlanner(){
   root.innerHTML = `
     <div class="match-form">
       <div class="field"><label>Datum</label><input type="date" id="mf-date"></div>
-      <div class="field"><label>Doma / venku</label>
-        <select id="mf-home"><option value="1">Doma</option><option value="0">Venku</option></select>
+      <div class="field"><label>Typ</label>
+        <select id="mf-type">
+          <option value="doma">Zápas doma</option>
+          <option value="venku">Zápas venku</option>
+          <option value="nabor">Nábor / tryout</option>
+        </select>
       </div>
-      <div class="field"><label>Soupeř (nepovinné)</label><input type="text" id="mf-rival" placeholder="např. Sparta B, Semíčko…"></div>
-      <button class="btn" id="mf-add">+ Přidat zápas</button>
+      <div class="field"><label>Soupeř / popis (nepovinné)</label><input type="text" id="mf-rival" placeholder="např. Sparta B, Semíčko…"></div>
+      <button class="btn" id="mf-add">+ Přidat</button>
     </div>
     <div class="match-list" id="match-list"></div>
     <div class="cal-nav">
@@ -1097,7 +1119,8 @@ function initPlanner(){
     <div class="legend">
       <span><span class="sw" style="background:var(--rink);"></span>zápas doma</span>
       <span><span class="sw" style="background:var(--ink-faint);"></span>zápas venku</span>
-      <span><span class="sw" style="background:color-mix(in srgb, var(--red) 25%, var(--paper));"></span>rivalry týden (7 dní před derby)</span>
+      <span><span class="sw" style="background:var(--amber);"></span>nábor</span>
+      <span><span class="sw" style="background:color-mix(in srgb, var(--red) 25%, var(--paper));"></span>rivalry týden</span>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
     <div id="day-panel-holder"></div>
@@ -1109,14 +1132,15 @@ function initPlanner(){
 
   function renderMatchList(){
     const list = document.getElementById('match-list');
-    if(matches.length === 0){ list.innerHTML = '<p style="color:var(--ink-faint);font-size:.86rem;">Zatím žádné zápasy — přidej datum výše a kalendář se sám doplní o přípravu na zápas.</p>'; return; }
+    if(matches.length === 0){ list.innerHTML = '<p style="color:var(--ink-faint);font-size:.86rem;">Zatím nic — přidej datum výše (zápas nebo nábor) a kalendář se sám doplní o přípravu.</p>'; return; }
     const sorted = [...matches].sort((a,b)=>a.date.localeCompare(b.date));
     list.innerHTML = sorted.map(m => {
       const d = new Date(m.date+'T00:00:00');
       const label = d.toLocaleDateString('cs-CZ', {weekday:'long', day:'numeric', month:'long'});
+      const dotClass = m.type === 'doma' ? 'doma' : (m.type === 'nabor' ? 'nabor' : 'venku');
       return `<div class="match-row">
-        <span class="dot ${m.home ? 'doma':'venku'}"></span>
-        <span class="info"><strong>${label}</strong>${m.rival ? ' · '+m.rival : ''} ${m.home ? '(doma)':'(venku)'}</span>
+        <span class="dot ${dotClass}"></span>
+        <span class="info"><strong>${label}</strong>${m.rival ? ' · '+m.rival : ''} · ${TYPE_LABEL[m.type]}</span>
         <button class="rm" data-date="${m.date}" title="Smazat">×</button>
       </div>`;
     }).join('');
@@ -1130,15 +1154,14 @@ function initPlanner(){
   document.getElementById('mf-add').addEventListener('click', () => {
     const date = dateInput.value;
     if(!date) return;
-    const home = document.getElementById('mf-home').value === '1';
+    const type = document.getElementById('mf-type').value;
     const rival = document.getElementById('mf-rival').value.trim();
     matches = matches.filter(m => m.date !== date);
-    matches.push({date, home, rival});
+    matches.push({date, type, rival});
     saveMatches(matches);
-    renderMatchList(); renderCalendar();
     const d = new Date(date+'T00:00:00');
     cursor = new Date(d.getFullYear(), d.getMonth(), 1);
-    renderCalendar();
+    renderMatchList(); renderCalendar();
   });
 
   function closeDayPanel(){ document.getElementById('day-panel-holder').innerHTML = ''; selectedDate = null; }
@@ -1149,7 +1172,7 @@ function initPlanner(){
     const label = d.toLocaleDateString('cs-CZ', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
     const base = WEEKLY[isoDow(d)];
     const suggestion = stage ? stage.detail : base.detail;
-    const note = notes[dateStr] || {done:false, text:''};
+    const note = notes[dateStr] || {done:false, text:'', label:''};
     const holder = document.getElementById('day-panel-holder');
     holder.innerHTML = `
       <div class="day-panel">
@@ -1158,20 +1181,27 @@ function initPlanner(){
           <button class="dp-close" aria-label="Zavřít">×</button>
         </div>
         <div class="suggestion">${suggestion}</div>
+        <div class="field" style="margin-bottom:.6rem;">
+          <label style="font-family:'Oswald',sans-serif;font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);display:block;margin-bottom:.3rem;">Rubrika (co natáčíme — zobrazí se rovnou v kalendáři)</label>
+          <input type="text" id="dp-label" placeholder="např. Mic-up, Trend Radar, Walkout song…" value="${(note.label||'').replace(/"/g,'&quot;')}" style="width:100%;padding:.5rem .6rem;border:1px solid var(--line-strong);border-radius:var(--radius);background:var(--ice);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:.85rem;">
+        </div>
         <label class="dp-check"><input type="checkbox" id="dp-done" ${note.done?'checked':''}> Hotovo</label>
-        <textarea id="dp-note" placeholder="Poznámka — konkrétní nápad, kdo to natočí, odkaz…">${note.text}</textarea>
+        <textarea id="dp-note" placeholder="Poznámka — kdo to natočí, odkaz, detaily…">${note.text}</textarea>
       </div>
     `;
     holder.querySelector('.dp-close').addEventListener('click', closeDayPanel);
     const doneBox = holder.querySelector('#dp-done');
     const noteBox = holder.querySelector('#dp-note');
+    const labelBox = holder.querySelector('#dp-label');
     function persist(){
-      notes[dateStr] = {done: doneBox.checked, text: noteBox.value};
+      notes[dateStr] = {done: doneBox.checked, text: noteBox.value, label: labelBox.value.trim()};
       saveNotes(notes);
       renderCalendar(dateStr);
     }
     doneBox.addEventListener('change', persist);
     noteBox.addEventListener('blur', persist);
+    labelBox.addEventListener('blur', persist);
+    labelBox.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); persist(); labelBox.blur(); } });
   }
 
   function renderCalendar(keepSelected){
@@ -1200,18 +1230,22 @@ function initPlanner(){
           if(s){ stage = s; matchInfo = m; break; }
         }
       }
-      const isMatchDay = !!matchToday;
+      const isEventDay = !!matchToday;
       const note = notes[ds];
       const classes = ['cal-day'];
-      if(isMatchDay) classes.push('match-day', matchInfo.home ? 'doma':'venku');
+      if(isEventDay) classes.push('match-day', matchInfo.type);
       else if(stage) classes.push('pre-match');
       if(note && note.done) classes.push('done');
       if(ds === today) classes.push('today');
 
+      const displayTag = note && note.label
+        ? `<span class="dtag rubrika">${note.label}</span>`
+        : `<span class="dtag">${stage ? stage.label : base.tag}</span>`;
+
       html += `<button class="${classes.join(' ')}" data-date="${ds}" data-stage='${stage ? JSON.stringify(stage).replace(/'/g,"&#39;") : ''}'>
         <span class="dnum">${day}${note && note.done ? ' ✓' : ''}</span>
-        ${isMatchDay ? `<span class="mtag">${matchInfo.home?'ZÁPAS':'VENKU'}</span>` : ''}
-        <span class="dtag">${stage ? stage.label : base.tag}</span>
+        ${isEventDay ? `<span class="mtag mtag-${matchInfo.type}">${TYPE_LABEL[matchInfo.type]}</span>` : ''}
+        ${displayTag}
       </button>`;
     }
     grid.innerHTML = html;
